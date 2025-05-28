@@ -1,0 +1,22 @@
+# 3 vms to replicate the 2 regions and the lb in the between
+
+VAGRANT_NODES = {
+  "vm-us"  => "192.168.56.10",
+  "vm-eu"  => "192.168.56.11",
+  "vm-lb"  => "192.168.56.12"
+}
+
+# Easy loop to create the vms with ubuntu images, the right name and k3s installed.
+VAGRANT_NODES.each do |name, ip|
+  Vagrant.configure("2") do |config|
+    config.vm.define name do |node|
+      node.vm.box = "bento/ubuntu-24.04"
+      node.vm.hostname = name
+      node.vm.network "private_network", ip: ip
+      node.vm.provision "shell", inline: <<-SHELL
+        sudo apt update
+        curl -sfL https://get.k3s.io | sh -s - --write-kubeconfig-mode 644
+      SHELL
+    end
+  end
+end
