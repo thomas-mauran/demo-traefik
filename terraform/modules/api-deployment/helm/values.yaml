@@ -7,8 +7,7 @@ replicaCount: 1
 
 # This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
 image:
-  repository: traefik/whoami
-# repository: ghcr.io/thomas-mauran/api
+  repository: ghcr.io/thomas-mauran/api
   # This sets the pull policy for images.
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
@@ -88,12 +87,14 @@ resources: {}
 # This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 livenessProbe:
   httpGet:
-    path: /
+    path: /health
     port: http
+    scheme: HTTPS
 readinessProbe:
   httpGet:
-    path: /
+    path: /health
     port: http
+    scheme: HTTPS
 
 # This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
 autoscaling:
@@ -113,7 +114,7 @@ volumes:
 
 volumeMounts:
   - name: tls-cert
-    mountPath: "/etc/tls"
+    mountPath: "/cert"
     readOnly: true
 
 nodeSelector: {}
