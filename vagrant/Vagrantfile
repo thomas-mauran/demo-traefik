@@ -19,6 +19,13 @@ Vagrant.configure("2") do |config|
       node.vm.synced_folder "../terraform/kubeconfigs", "/vagrant/kubeconfigs"
 
       node.vm.provision "shell", inline: <<-SHELL
+        mkdir /mnt/data
+        openssl req -x509 -nodes -days 365 \
+        -newkey rsa:2048 \
+        -keyout /mnt/data/key.pem \
+        -out /mnt/data/cert.pem \
+        -subj "/CN=api.localhost/O=DevOrg"
+
         sudo apt update
         curl -sfL https://get.k3s.io | sh -s - --write-kubeconfig-mode 644 --tls-san #{ip}
 

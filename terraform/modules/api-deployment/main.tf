@@ -18,7 +18,6 @@ resource "kubernetes_persistent_volume" "api-pv" {
 
     access_modes = ["ReadWriteOnce"]
     storage_class_name               = "local-path"
-
     persistent_volume_reclaim_policy = "Retain"
 
     persistent_volume_source {
@@ -54,13 +53,21 @@ resource "kubernetes_persistent_volume_claim" "api-pvc" {
 resource "helm_release" "api" {
   name      = "api"
   chart     = "${path.module}/helm"
-  namespace = kubernetes_namespace.api-namespace.metadata[0].name
+  namespace = "api"
+  values = [
+    file("${path.module}/helm/values.yaml")
+  ]
+  create_namespace = true
 
   # Override the host value using the region variable
-  set {
+  set = [{
     name  = "ingress.hosts[0].host"
-    value = "${var.region}.localhost"
-  }
+    value = "api.${var.region}"
+  }]
 
-  depends_on = [kubernetes_persistent_volume_claim.api-pvc]
+
+  depends_on = [
+    kubernetes_namespace.api-namespace,
+    # kubernetes_persistent_volume_claim.api-pvc
+  ]
 }

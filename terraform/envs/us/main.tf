@@ -1,4 +1,9 @@
 module "api-deployment" {
   source    = "../../modules/api-deployment"
-  region = "eu"
+  region = "us"
+  
+  providers = {
+    kubernetes = kubernetes.us
+    helm       = helm.us
+  }
 }
