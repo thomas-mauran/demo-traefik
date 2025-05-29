@@ -25,4 +25,4 @@ COPY --from=builder /app/whoami .
 EXPOSE 80
 
 # Set the command
-CMD ["./whoami"]
+CMD ["./whoami", "-port", "443"]
