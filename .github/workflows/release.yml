@@ -3,7 +3,7 @@ name: Release Deployment
 on:
   push:
     branches:
-    - '**'
+      - '**'
 
 jobs:
   lint-api:
@@ -12,7 +12,6 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    ## Golang linter
     - uses: actions/setup-go@v4
       with:
         go-version: '1.24'
@@ -24,8 +23,7 @@ jobs:
         version: latest
         working-directory: api
 
-    ## Golang test
-    - name: golangci-test
+    - name: go-test
       run: make test
       working-directory: api
 
@@ -43,7 +41,7 @@ jobs:
         delete-only-untagged-versions: false
 
   prepare:
-    needs: cleanup
+    needs: cleanup-ghcr-images
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.vars.outputs.version }}
@@ -56,15 +54,13 @@ jobs:
     - name: Set outputs
       id: vars
       run: |
-        echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        echo "version=$(date +%s)" >> $GITHUB_OUTPUT
 
   build-backend:
     needs:
-    - lint-api
-    - prepare
-    - cleanup-ghcr-images
+      - lint-api
+      - prepare
     runs-on: ubuntu-latest
-
     permissions:
       packages: write
       contents: read
@@ -91,10 +87,10 @@ jobs:
       with:
         context: ./api
         file: ./api/Dockerfile
-        platforms: linux/amd64 linux/arm64
+        platforms: linux/amd64,linux/arm64
         push: true
         tags: |
-          ghcr.io/${{ github.repository_owner }}/api:latest
+          ghcr.io/${{ github.repository_owner }}/api:debug
           ghcr.io/${{ github.repository_owner }}/api:${{ needs.prepare.outputs.version }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
