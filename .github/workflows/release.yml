@@ -44,7 +44,6 @@ jobs:
     needs:
       - cleanup-ghcr-images
       - lint-api
-      - prepare
     runs-on: ubuntu-latest
     permissions:
       packages: write
