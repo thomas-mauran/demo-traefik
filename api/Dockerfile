@@ -14,7 +14,7 @@ COPY *.go Makefile ./
 RUN make build
 
 # ---------- Final stage ----------
-FROM alpine:3.20
+FROM alpine:3.21
 
 WORKDIR /app
 
