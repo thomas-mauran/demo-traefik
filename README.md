@@ -1,4 +1,75 @@
-# demo-traefik
+# Demo Traefik
+
+The goal of this project is to setup [this](https://github.com/containous/foobar-api) API and expose it through https.
+
+- The certificate needs to be stored in a persistent volume for the API.
+- The API must be deployed on 2 datacenters (EU and US) and load balanced through a third node.
+
+
+#### Vagrant Virtual Machines
+
+To replicate the different clusters and the load balancer, we will use Vagrant to create 3 virtual machines:
+- `vm-eu`: The European cluster
+- `vm-us`: The US cluster
+- `vm-lb`: The Load Balancer
+
+
+
+```mermaid
+graph TD
+    subgraph US_Region
+        VMUS[vm-us]
+        TRAEFIKUS[Traefik<br>api.us]
+        FOOBARUS[HTTPS Go API]
+        VMUS --> TRAEFIKUS
+        TRAEFIKUS --> FOOBARUS
+    end
+
+    subgraph EU_Region
+        VMEU[vm-eu]
+        TRAEFIKEU[Traefik<br>api.eu]
+        FOOBAREU[HTTPS Go API]
+        VMEU --> TRAEFIKEU
+        TRAEFIKEU --> FOOBAREU
+    end
+
+    subgraph Load_Balancer
+        VMLB[vm-lb<br>Geo LB]
+    end
+
+    VMLB --> TRAEFIKUS
+    VMLB --> TRAEFIKEU
+```
+
+##### Deployment
+To deploy the Vagrant virtual machines, follow these steps:
+1. Install [Vagrant](https://www.vagrantup.com/downloads) and [VirtualBox](https://www.virtualbox.org/wiki/Downloads).
+2. Install a virtualization provider, such as [VirtualBox](https://www.virtualbox.org/wiki/Downloads).
+3. Start the Vagrant VM:
+    ```bash
+    vagrant up
+    ```
+   As defined in the `Vagrantfile`. This will create the 3 VMs: `vm-eu`, `vm-us`, and `vm-lb`.
+   The command will also copy the kubeconfig files from the VMs to the `terraform/kubeconfigs` directory.
+4. SSH into a VM:
+    ```bash
+    vagrant ssh vm-us
+    ```
+
+#### GitOps approach
+This project uses a GitOps approach to manage the Kubernetes resources. The whole project is deployable using the `terraform` directory, which contains the necessary Terraform scripts to create the infrastructure and deploy the Kubernetes resources.
+
+How to deploy the project:
+
+:warning: Make sure you already deployed the Vagrant VMs in the past section. This will create the necessary kubeconfig files in the `terraform/kubeconfigs` directory.
+
+- Install [Terraform](https://www.terraform.io/downloads.html) and [kubectl](https://kubernetes.io/docs/tasks/tools/).
+
+In the `terraform` directory, run the following commands:
+```bash
+terraform init
+terraform apply
+```
 
 ### Problems tracking
 
