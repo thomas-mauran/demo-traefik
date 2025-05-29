@@ -1,5 +1,4 @@
 # 3 vms to replicate the 2 regions and the lb in the between
-
 VAGRANT_NODES = {
   "vm-us"  => "192.168.56.10",
   "vm-eu"  => "192.168.56.11",
@@ -7,29 +6,38 @@ VAGRANT_NODES = {
 }
 
 # Easy loop to create the vms with ubuntu images, the right name and k3s installed.
-
 Vagrant.configure("2") do |config|
   VAGRANT_NODES.each do |name, ip|
     config.vm.define name do |node|
       node.vm.box = "bento/ubuntu-24.04"
       node.vm.hostname = name
       node.vm.network "private_network", ip: ip
-
-      # We make a shared folder to pull kubeconfig files to the host
       node.vm.synced_folder "../terraform/kubeconfigs", "/vagrant/kubeconfigs"
 
       node.vm.provision "shell", inline: <<-SHELL
-        mkdir /mnt/data
-        openssl req -x509 -nodes -days 365 \
-        -newkey rsa:2048 \
-        -keyout /mnt/data/key.pem \
-        -out /mnt/data/cert.pem \
-        -subj "/CN=api.localhost/O=DevOrg"
+        sudo apt update -y
 
-        sudo apt update
+        if [ "#{name}" != "vm-lb" ]; then
+          CN=""
+          case "#{name}" in
+            "vm-us")
+              CN="api.us"
+              ;;
+            "vm-eu")
+              CN="api.eu"
+              ;;
+          esac
+
+          sudo mkdir -p /mnt/data
+          sudo openssl req -x509 -nodes -days 365 \
+            -newkey rsa:2048 \
+            -keyout /mnt/data/key.pem \
+            -out /mnt/data/cert.pem \
+            -subj "/CN=${CN}/O=DevOrg"
+        fi
+
         curl -sfL https://get.k3s.io | sh -s - --write-kubeconfig-mode 644 --tls-san #{ip}
 
-        # We copy the kubeconfig files on the host, we will use those with tf to deploy the infra
         if [ -f /etc/rancher/k3s/k3s.yaml ]; then
           sudo sed -i 's|https://127.0.0.1:6443|https://#{ip}:6443|' /etc/rancher/k3s/k3s.yaml
           sudo cp /etc/rancher/k3s/k3s.yaml /vagrant/kubeconfigs/kubeconfig-#{name}.yaml
