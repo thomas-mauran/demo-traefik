@@ -1,17 +1,28 @@
-FROM golang:1.24.3
+# ---------- Build stage ----------
+FROM golang:1.24.3 AS builder
 
 WORKDIR /app
 
+# Copy module files and download dependencies
 COPY go.mod go.sum ./
-
 RUN go mod download
 
+# Copy the rest of the source code and Makefile
 COPY *.go Makefile ./
 
-COPY ./cert /cert
-
+# Build the binary
 RUN make build
 
+# ---------- Final stage ----------
+FROM alpine:3.20
+
+WORKDIR /app
+
+# Copy the binary from the builder stage
+COPY --from=builder /app/whoami .
+
+# Expose application port
 EXPOSE 80
 
-CMD [ "./whoami" ]
+# Set the command
+CMD ["./whoami"]
