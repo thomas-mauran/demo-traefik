@@ -53,47 +53,41 @@ service:
   # This sets the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
   type: ClusterIP
   # This sets the ports more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
-  port: 80
+  port: 443
 
 # This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
 ingress:
   enabled: true
   className: "traefik"
-  annotations:
-    kubernetes.io/ingress.class: traefik
-    # kubernetes.io/tls-acme: "true"
+  # Remove the problematic annotations - IngressRoute will handle this properly
+  # annotations:
+  #   kubernetes.io/ingress.class: traefik
+  #   traefik.ingress.kubernetes.io/service.tls.insecureSkipVerify: "true"
+  #   traefik.ingress.kubernetes.io/service.scheme: https
+
   hosts:
     - host: api.localhost
       paths:
         - path: /
           pathType: ImplementationSpecific
-  tls: []
-  #  - secretName: chart-example-tls
+  # Remove TLS section as IngressRoute will handle passthrough
+  # tls: 
+  #  - secretName: api-tls-secret
   #    hosts:
-  #      - chart-example.local
+  #      - api.localhost
 
 resources: {}
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
 
 # This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 livenessProbe:
   httpGet:
     path: /health
-    port: http
+    port: 443
     scheme: HTTPS
 readinessProbe:
   httpGet:
     path: /health
-    port: http
+    port: 443
     scheme: HTTPS
 
 # This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/

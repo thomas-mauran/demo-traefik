@@ -1,43 +1,32 @@
 {{- if .Values.ingress.enabled -}}
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+{{- if eq .Values.ingress.className "traefik" -}}
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
 metadata:
   name: {{ include "api.fullname" . }}
   labels:
     {{- include "api.labels" . | nindent 4 }}
-  {{- with .Values.ingress.annotations }}
-  annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
 spec:
-  {{- with .Values.ingress.className }}
-  ingressClassName: {{ . }}
-  {{- end }}
-  {{- if .Values.ingress.tls }}
-  tls:
-    {{- range .Values.ingress.tls }}
-    - hosts:
-        {{- range .hosts }}
-        - {{ . | quote }}
-        {{- end }}
-      secretName: {{ .secretName }}
-    {{- end }}
-  {{- end }}
-  rules:
+  entryPoints:
+    - websecure
+  routes:
     {{- range .Values.ingress.hosts }}
-    - host: {{ .host | quote }}
-      http:
-        paths:
-          {{- range .paths }}
-          - path: {{ .path }}
-            {{- with .pathType }}
-            pathType: {{ . }}
-            {{- end }}
-            backend:
-              service:
-                name: {{ include "api.fullname" $ }}
-                port:
-                  number: {{ $.Values.service.port }}
-          {{- end }}
+    - match: Host(`{{ .host }}`)
+      kind: Rule
+      services:
+        - name: {{ include "api.fullname" $ }}
+          port: {{ $.Values.service.port }}
+          scheme: https
+          serversTransport: api-transport
     {{- end }}
-{{- end }}
+  tls:
+    passthrough: true  # Since the go api is already handling https we need to do so to use traefik as just a reverse proxy without tls
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: ServersTransport
+metadata:
+  name: api-transport
+spec:
+  insecureSkipVerify: true
+{{- end -}}
+{{- end -}}
