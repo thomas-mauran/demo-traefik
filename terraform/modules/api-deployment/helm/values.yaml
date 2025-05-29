@@ -7,7 +7,8 @@ replicaCount: 1
 
 # This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
 image:
-  repository: ghcr.io/thomas-mauran/api
+  repository: traefik/whoami
+# repository: ghcr.io/thomas-mauran/api
   # This sets the pull policy for images.
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
@@ -102,18 +103,18 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
 
-  # Additional volumes on the output Deployment definition.
-volumes: []
-# - name: foo
-#   secret:
-#     secretName: mysecret
-#     optional: false
+# Additional volumes on the output Deployment definition
+pvcName: "api-pvc"
 
-# Additional volumeMounts on the output Deployment definition.
-volumeMounts: []
-# - name: foo
-#   mountPath: "/etc/foo"
-#   readOnly: true
+volumes:
+  - name: tls-cert
+    persistentVolumeClaim:
+      claimName: "api-pvc"
+
+volumeMounts:
+  - name: tls-cert
+    mountPath: "/etc/tls"
+    readOnly: true
 
 nodeSelector: {}
 
