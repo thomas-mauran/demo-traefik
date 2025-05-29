@@ -71,6 +71,17 @@ terraform init
 terraform apply
 ```
 
+Then add the following lines to your `/etc/hosts` file:
+
+```bash
+192.168.56.10	api.us
+192.168.56.11	api.eu
+```
+
+Then you can access the API through the following URLs:
+- https://api.us
+- https://api.eu
+
 ### Problems tracking
 
 - Issue with Vagrant on macOS:
