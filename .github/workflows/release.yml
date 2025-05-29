@@ -38,26 +38,11 @@ jobs:
         package-name: 'api'
         package-type: 'container'
         min-versions-to-keep: 2
-        delete-only-untagged-versions: fals
-
-  prepare:
-    needs: cleanup-ghcr-images
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.vars.outputs.version }}
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-
-    - name: Set outputs
-      id: vars
-      run: |
-        echo "version=$(date +%s)" >> $GITHUB_OUTPUT
+        delete-only-untagged-versions: false
 
   build-backend:
     needs:
+      - cleanup-ghcr-images
       - lint-api
       - prepare
     runs-on: ubuntu-latest
