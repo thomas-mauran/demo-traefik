@@ -1,8 +1,3 @@
-# Region of the cluster
-variable "region" {
-  type = string
-}
-
 # API namespace to deploy our app
 resource "kubernetes_namespace" "api-namespace" {
   metadata {
@@ -56,10 +51,16 @@ resource "kubernetes_persistent_volume_claim" "api-pvc" {
   }
 }
 
-
-
 resource "helm_release" "api" {
-  name       = "api"
-  chart      = "${path.module}/helm"
+  name      = "api"
+  chart     = "${path.module}/helm"
   namespace = kubernetes_namespace.api-namespace.metadata[0].name
+
+  # Override the host value using the region variable
+  set {
+    name  = "ingress.hosts[0].host"
+    value = "${var.region}.localhost"
+  }
+
+  depends_on = [kubernetes_persistent_volume_claim.api-pvc]
 }

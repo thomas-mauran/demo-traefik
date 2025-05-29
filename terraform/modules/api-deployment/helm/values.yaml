@@ -59,22 +59,12 @@ service:
 ingress:
   enabled: true
   className: "traefik"
-  # Remove the problematic annotations - IngressRoute will handle this properly
-  # annotations:
-  #   kubernetes.io/ingress.class: traefik
-  #   traefik.ingress.kubernetes.io/service.tls.insecureSkipVerify: "true"
-  #   traefik.ingress.kubernetes.io/service.scheme: https
-
+  region: "us"  # Default region
   hosts:
-    - host: api.localhost
+    - host: us.localhost
       paths:
         - path: /
           pathType: ImplementationSpecific
-  # Remove TLS section as IngressRoute will handle passthrough
-  # tls: 
-  #  - secretName: api-tls-secret
-  #    hosts:
-  #      - api.localhost
 
 resources: {}
 
