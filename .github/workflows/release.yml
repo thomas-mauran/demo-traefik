@@ -41,7 +41,9 @@ jobs:
         delete-only-untagged-versions: fals
 
   prepare:
-    needs: cleanup-ghcr-images
+    needs: 
+    - cleanup-ghcr-images
+    - lint-api
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.vars.outputs.version }}
