@@ -1,11 +1,11 @@
 provider "kubernetes" {
-  # config_path      = "${path.module}/../../kubeconfigs/kubeconfig-vm-us.yaml"
-  config_path      = "~/.kube/config"
+  alias       = "eu"
+  config_path = "${path.module}/kubeconfigs/kubeconfig-vm-us.yaml"
 }
 
 provider "helm" {
-  kubernetes  {
-    # config_path      = "${path.module}/../../kubeconfigs/kubeconfig-vm-us.yaml"
-    config_path = "~/.kube/config"
+  alias = "eu"
+  kubernetes {
+    config_path = "${path.module}/kubeconfigs/kubeconfig-vm-us.yaml"
   }
 }
