@@ -27,21 +27,21 @@ jobs:
       run: make test
       working-directory: api
 
-  # cleanup-ghcr-images:
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     packages: write
-  #   steps:
-  #   - name: Delete untagged container images
-  #     uses: actions/delete-package-versions@v4
-  #     with:
-  #       package-name: 'api'
-  #       package-type: 'container'
-  #       min-versions-to-keep: 2
-  #       delete-only-untagged-versions: fals
+  cleanup-ghcr-images:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+    - name: Delete untagged container images
+      uses: actions/delete-package-versions@v4
+      with:
+        package-name: 'api'
+        package-type: 'container'
+        min-versions-to-keep: 2
+        delete-only-untagged-versions: fals
 
   prepare:
-    # needs: cleanup-ghcr-image
+    needs: cleanup-ghcr-image
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.vars.outputs.version }}
