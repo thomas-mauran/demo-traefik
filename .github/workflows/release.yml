@@ -2,8 +2,8 @@ name: Release Deployment
 
 on:
   push:
-    branches:
-      - '**'
+    tags:
+    - 'v*'
 
 jobs:
   lint-api:
@@ -93,7 +93,7 @@ jobs:
         platforms: linux/amd64,linux/arm64
         push: true
         tags: |
-          ghcr.io/${{ github.repository_owner }}/api:debug
+          ghcr.io/${{ github.repository_owner }}/api:latest
           ghcr.io/${{ github.repository_owner }}/api:${{ needs.prepare.outputs.version }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
