@@ -41,7 +41,7 @@ jobs:
         delete-only-untagged-versions: fals
 
   prepare:
-    needs: cleanup-ghcr-image
+    needs: cleanup-ghcr-images
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.vars.outputs.version }}
