@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: us-remote-service
+  namespace: default
+spec:
+  type: ExternalName
+  externalName: 192.168.56.10
+  ports:
+    - port: 443
+      targetPort: 443
+      protocol: TCP

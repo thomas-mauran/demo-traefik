@@ -1,0 +1,11 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: geoip
+  namespace: default
+spec:
+  plugin:
+    geo-ip:
+      dbPath: "/geoip-db/GeoLite2-City.mmdb"
+      preferXForwardedForHeader: true
+      debug: true

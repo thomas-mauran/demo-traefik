@@ -1,0 +1,30 @@
+providers:
+  kubernetesCRD:
+    enabled: true
+    allowExternalNameServices: true
+
+experimental:
+  plugins:
+    geoip2:
+      moduleName: github.com/thiagotognoli/traefikgeoip
+      version: v0.22.0
+
+deployment:
+  additionalVolumes:
+    - name: geoip2
+      emptyDir: {}
+
+  initContainers:
+    - name: download
+      image: alpine
+      volumeMounts:
+        - name: geoip2
+          mountPath: /geoip2
+      command:
+        - /bin/sh
+        - -ce
+        - |
+          wget -O /geoip2/GeoLite2-Country.mmdb https://git.io/GeoLite2-Country.mmdb
+  additionalVolumeMounts:
+    - name: geoip2
+      mountPath: /geoip2

@@ -1,0 +1,23 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: us-remote
+  namespace: default
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`api.lb`)
+      kind: Rule
+      services:
+        - name: us-remote-service
+          kind: Service
+          port: 443
+          scheme: https
+          serversTransport: api-transport
+      # middlewares:
+      #   - name: host-header
+      #     namespace: default
+      # middlewares:
+        # - name: geoip
+        #   namespace: default

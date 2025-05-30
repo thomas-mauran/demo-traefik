@@ -21,3 +21,13 @@ module "api_deployment_eu" {
     helm       = helm.eu
   }
 }
+
+# Deploy to LB environment
+module "lb_deployment" {
+  source = "./modules/lb-deployment"
+  
+  providers = {
+    kubernetes = kubernetes.lb
+    helm       = helm.lb
+  }
+}
