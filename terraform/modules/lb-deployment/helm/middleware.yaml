@@ -1,0 +1,9 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: host-header
+  namespace: default
+spec:
+  headers:
+    customRequestHeaders:
+      Host: "api.us"

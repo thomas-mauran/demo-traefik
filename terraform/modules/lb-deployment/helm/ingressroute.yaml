@@ -5,7 +5,7 @@ metadata:
   namespace: default
 spec:
   entryPoints:
-    - web
+    - websecure
   routes:
     - match: Host(`api.lb`)
       kind: Rule
@@ -15,9 +15,9 @@ spec:
           port: 443
           scheme: https
           serversTransport: api-transport
-      # middlewares:
-      #   - name: host-header
-      #     namespace: default
+      middlewares:
+        - name: host-header
+          namespace: default
       # middlewares:
         # - name: geoip
         #   namespace: default
