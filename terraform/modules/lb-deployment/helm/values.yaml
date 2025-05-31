@@ -8,6 +8,7 @@ experimental:
     geoip2:
       moduleName: github.com/thiagotognoli/traefikgeoip
       version: v0.22.0
+      goPath: /var/lib/traefik/plugins-local
 
 ingressRoute:
   dashboard:
@@ -15,6 +16,16 @@ ingressRoute:
 
 deployment:
   additionalVolumes:
+    - name: local-plugins
+      hostPath:
+        path: /var/lib/traefik/plugins-local
+        type: Directory
+    - name: geoip2
+      emptyDir: {}
+  additionalVolumeMounts:
+    - name: local-plugins
+      mountPath: /plugins-local
+
     - name: geoip2
       emptyDir: {}
   hostAliases:
@@ -33,12 +44,12 @@ deployment:
       image: alpine
       volumeMounts:
         - name: geoip2
-          mountPath: /geoip2
+          mountPath: /tmp/geoip2
       command:
         - /bin/sh
         - -ce
         - |
-          wget -O /geoip2/GeoLite2-Country.mmdb https://git.io/GeoLite2-Country.mmdb
+          wget -P /tmp/geoip2 https://git.io/GeoLite2-City.mmdb
   additionalVolumeMounts:
     - name: geoip2
       mountPath: /geoip2

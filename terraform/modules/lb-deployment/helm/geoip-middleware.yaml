@@ -5,7 +5,9 @@ metadata:
   namespace: default
 spec:
   plugin:
-    geo-ip:
-      dbPath: "/geoip-db/GeoLite2-City.mmdb"
-      preferXForwardedForHeader: true
-      debug: true
+    geoip2:
+      dbPath: "/geoip2/GeoLite2-City.mmdb"
+      addCountryHeader: true
+      addContinentHeader: true
+      addRegionHeader: true
+      addCityHeader: true

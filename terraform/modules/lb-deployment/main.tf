@@ -14,12 +14,7 @@ resource "helm_release" "traefik" {
   ]
 }
 
-resource "kubernetes_manifest" "endpoint" {
-  manifest = yamldecode(file("${path.module}/helm/endpoint.yaml"))
-
-  depends_on = [helm_release.traefik]
-}
-
+// External services
 resource "kubernetes_manifest" "external_us_service" {
   manifest = yamldecode(file("${path.module}/helm/external-us-service.yaml"))
 
@@ -32,24 +27,34 @@ resource "kubernetes_manifest" "external_eu_service" {
   depends_on = [helm_release.traefik]
 }
 
+// Server transport
+
 resource "kubernetes_manifest" "server_transport" {
   manifest = yamldecode(file("${path.module}/helm/servertransport.yaml"))
 
   depends_on = [helm_release.traefik]
 }
 
+// Middlewares
 resource "kubernetes_manifest" "geoip_middleware" {
   manifest = yamldecode(file("${path.module}/helm/geoip-middleware.yaml"))
 
   depends_on = [helm_release.traefik]
 }
 
-resource "kubernetes_manifest" "middleware" {
-  manifest = yamldecode(file("${path.module}/helm/middleware.yaml"))
+resource "kubernetes_manifest" "middleware_eu_header" {
+  manifest = yamldecode(file("${path.module}/helm/middleware-eu-header.yaml"))
 
   depends_on = [helm_release.traefik]
 }
 
+resource "kubernetes_manifest" "middleware_us_header" {
+  manifest = yamldecode(file("${path.module}/helm/middleware-us-header.yaml"))
+
+  depends_on = [helm_release.traefik]
+}
+
+// Ingress route
 resource "kubernetes_manifest" "ingressroute" {
   manifest = yamldecode(file("${path.module}/helm/ingressroute.yaml"))
 

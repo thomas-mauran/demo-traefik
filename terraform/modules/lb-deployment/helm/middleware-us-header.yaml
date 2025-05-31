@@ -1,7 +1,7 @@
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
-  name: host-header
+  name: us-host-header
   namespace: default
 spec:
   headers:

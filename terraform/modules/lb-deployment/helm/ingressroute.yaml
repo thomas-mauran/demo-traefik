@@ -1,14 +1,48 @@
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
-  name: us-remote
+  name: geoip-ingressroute
   namespace: default
 spec:
   entryPoints:
     - websecure
   routes:
+    # EU Route - Higher Priority (using X-Country-Code)
+    # - match: Host(`api.lb`) && HeadersRegexp(`X-Country-Code`, `^(AD|AL|AT|BA|BE|BG|BY|CH|CZ|DE|DK|EE|ES|FI|FR|GB|GR|HR|HU|IE|IS|IT|LI|LT|LU|LV|MC|MD|ME|MK|MT|NL|NO|PL|PT|RO|RS|SE|SI|SK|SM|UA|VA)$`)
+    #   kind: Rule
+    #   priority: 100
+    #   services:
+    #     - name: eu-remote-service
+    #       kind: Service
+    #       port: 443
+    #       scheme: https
+    #       serversTransport: api-transport
+    #   middlewares:
+    #     - name: geoip
+    #       namespace: default
+    #     - name: eu-host-header
+    #       namespace: default
+    
+    # # Alternative: EU Route using Continent (simpler approach)
+    # - match: Host(`api.lb`) && Headers(`X-Continent-Code`, `EU`)
+    #   kind: Rule
+    #   priority: 90
+    #   services:
+    #     - name: eu-remote-service
+    #       kind: Service
+    #       port: 443
+    #       scheme: https
+    #       serversTransport: api-transport
+    #   middlewares:
+    #     - name: geoip
+    #       namespace: default
+    #     - name: eu-host-header
+    #       namespace: default
+    
+    # Default Route (US) - Lower Priority
     - match: Host(`api.lb`)
       kind: Rule
+      priority: 1
       services:
         - name: us-remote-service
           kind: Service
@@ -16,8 +50,7 @@ spec:
           scheme: https
           serversTransport: api-transport
       middlewares:
-        - name: host-header
+        - name: geoip
           namespace: default
-      # middlewares:
-        # - name: geoip
-        #   namespace: default
+        - name: us-host-header
+          namespace: default
