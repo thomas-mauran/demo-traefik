@@ -65,15 +65,6 @@ EOF
         # Install k3s normally on regional clusters
         curl -sfL https://get.k3s.io | sh -s - --write-kubeconfig-mode 644 --tls-san #{ip}
       else
-        # For the lb node: disable traefik on install, we will set it up ourself using the helm with geoip plugin
-        # Download and place the geoip2 plugin locally (issues with the traefik online plugin)
-        PLUGIN_DIR="/var/lib/traefik/plugins-local/github.com/thiagotognoli/traefikgeoip"
-        sudo mkdir -p "$PLUGIN_DIR"
-        sudo apt install -y git
-
-        # Clone plugin directly inside the VM
-        sudo git clone --branch v1.1.1 https://github.com/thiagotognoli/traefikgeoip.git "$PLUGIN_DIR"
-
         curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--disable traefik" sh -s - --write-kubeconfig-mode 644 --tls-san #{ip}
       fi
 
