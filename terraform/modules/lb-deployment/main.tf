@@ -56,19 +56,10 @@ resource "kubernetes_manifest" "middleware_us_header" {
 
 // Ingress route
 resource "kubernetes_manifest" "ingressroute" {
-  manifest = yamldecode(file("${path.module}/helm/ingressroute.yaml"))
+  manifest = yamldecode(file("${path.module}/helm/ingressroute-roundrobin.yaml"))
 
   depends_on = [
     helm_release.traefik,
     kubernetes_manifest.geoip_middleware,
   ]
 }
-
-# resource "kubernetes_manifest" "service" {
-#   manifest = yamldecode(file("${path.module}/helm/traefikservice.yaml"))
-
-#   depends_on = [
-#     helm_release.traefik,
-#     # kubernetes_manifest.geoip_middleware,
-#   ]
-# }

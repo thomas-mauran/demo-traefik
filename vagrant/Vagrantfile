@@ -66,6 +66,11 @@ EOF
         curl -sfL https://get.k3s.io | sh -s - --write-kubeconfig-mode 644 --tls-san #{ip}
       else
         curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--disable traefik" sh -s - --write-kubeconfig-mode 644 --tls-san #{ip}
+        # Install Traefik Resource Definitions:
+        kubectl apply -f https://raw.githubusercontent.com/traefik/traefik/v3.4/docs/content/reference/dynamic-configuration/kubernetes-crd-definition-v1.yml
+
+        # Install RBAC for Traefik:
+        kubectl apply -f https://raw.githubusercontent.com/traefik/traefik/v3.4/docs/content/reference/dynamic-configuration/kubernetes-crd-rbac.yml
       fi
 
       if [ -f /etc/rancher/k3s/k3s.yaml ]; then

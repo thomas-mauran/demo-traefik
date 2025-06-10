@@ -1,0 +1,26 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: round-robin-routing
+  namespace: default
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`api.lb`)
+      kind: Rule
+      services:
+        - name: eu-remote-service
+          kind: Service
+          port: 443
+          scheme: https
+          serversTransport: api-transport
+          weight: 1
+          passHostHeader: false
+        - name: us-remote-service
+          kind: Service
+          port: 443
+          scheme: https
+          serversTransport: api-transport
+          weight: 1
+          passHostHeader: false

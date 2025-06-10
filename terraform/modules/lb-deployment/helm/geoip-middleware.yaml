@@ -6,7 +6,8 @@ metadata:
 spec:
   plugin:
     geoip2:
-      dbPath: "/geoip2/GeoLite2-Country.mmdb"   
-      countryDbPath: "/geoip2/GeoLite2-Country.mmdb"
+      dbPath: "/geoip2/GeoLite2-City.mmdb"   
+      cityDbPath: "/geoip2/GeoLite2-City.mmdb"
       ipHeader: "X-Real-Ip"
       debug: true
+      preferXForwardedForHeader: true
