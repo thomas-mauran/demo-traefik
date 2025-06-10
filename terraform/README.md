@@ -1,5 +1,52 @@
 ## Terraform config
 
+## Setup
+
+We are using terraform workspaces to manage different environments. The workspaces are:
+- `local`: For local development using Vagrant VMs.
+- `azure`: For deploying to Azure.
+
+# To create the workspaces, run the following commands:
+
+```bash
+
+terraform workspace new local
+terraform workspace new azure
+terraform init
+```
+
+### Local deployment (with the Vagrant VMs) 
+```bash
+terraform workspace select local
+```
+
+### Azure test
+
+Prerequisites:
+- Install [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli).
+```bash
+brew install azure-cli
+```
+```bash
+terraform workspace select azure
+```
+```bash
+az login
+az account set --subscription "YOUR_SUBSCRIPTION_NAME_OR_ID"
+```
+
+Generate the ssh keys for the VMs:
+
+```bash
+ssh-keygen -t rsa -b 2048 -f ~/.ssh/azure_vm
+cat ~/.ssh/azure_vm.pub # Put that value in the `azure.tfvars` file
+```bash
+
+```bash
+terraform apply -var-file=azure.tfvars
+```
+
+
 ### Api deployment module
 This module deploys the foobar API.
 

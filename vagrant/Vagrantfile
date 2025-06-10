@@ -12,7 +12,7 @@ Vagrant.configure("2") do |config|
       node.vm.box = "bento/ubuntu-24.04"
       node.vm.hostname = name
       node.vm.network "private_network", ip: ip
-      node.vm.synced_folder "../terraform/kubeconfigs", "/vagrant/kubeconfigs"
+      node.vm.synced_folder "../terraform/kubeconfig/locals", "/vagrant/kubeconfigs/local"
 
       node.vm.provision "shell", inline: <<-SHELL
       sudo apt update -y
@@ -75,8 +75,8 @@ EOF
 
       if [ -f /etc/rancher/k3s/k3s.yaml ]; then
         sudo sed -i 's|https://127.0.0.1:6443|https://#{ip}:6443|' /etc/rancher/k3s/k3s.yaml
-        sudo cp /etc/rancher/k3s/k3s.yaml /vagrant/kubeconfigs/kubeconfig-#{name}.yaml
-        sudo chown vagrant:vagrant /vagrant/kubeconfigs/kubeconfig-#{name}.yaml
+        sudo cp /etc/rancher/k3s/k3s.yaml /vagrant/kubeconfigs/local/kubeconfig-#{name}.yaml
+        sudo chown vagrant:vagrant /vagrant/kubeconfigs/local/kubeconfig-#{name}.yaml
       fi
     SHELL
     end
