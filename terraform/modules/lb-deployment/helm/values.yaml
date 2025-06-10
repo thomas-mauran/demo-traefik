@@ -1,0 +1,65 @@
+providers:
+  kubernetesCRD:
+    enabled: true
+    allowExternalNameServices: true
+
+experimental:
+  plugins:
+    geoip2:
+      moduleName: github.com/thiagotognoli/traefikgeoip
+      version: v1.1.1
+
+ingressRoute:
+  dashboard:
+    enabled: true
+
+deployment:
+  additionalVolumes:
+    - name: geoip2
+      emptyDir: {}
+
+  hostAliases:
+  - ip: "192.168.56.10"
+    hostnames:
+    - "api.us"
+  - ip: "192.168.56.11"
+    hostnames:
+    - "api.eu"
+  - ip: "192.168.56.12"
+    hostnames:
+    - "api.lb"
+
+  initContainers:
+    - name: download
+      image: alpine
+      volumeMounts:
+        - name: geoip2
+          mountPath: /geoip2
+      command:
+        - /bin/sh
+        - -ce
+        - |
+          mkdir -p /geoip2 && \
+          wget -O /geoip2/GeoLite2-City.mmdb https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-City.mmdb
+
+additionalVolumeMounts:
+  - name: geoip2
+    mountPath: /geoip2
+
+logs:
+  general:
+    # -- Set [logs format](https://doc.traefik.io/traefik/observability/logs/#format)
+    format:  # @schema enum:["common", "json", null]; type:[string, null]; default: "common"
+    # By default, the level is set to INFO.
+    # -- Alternative logging levels are TRACE, DEBUG, INFO, WARN, ERROR, FATAL, and PANIC.
+    level: "TRACE"  # @schema enum:[TRACE,DEBUG,INFO,WARN,ERROR,FATAL,PANIC]; default: "INFO"
+
+ports:
+  websecure:
+    forwardedHeaders:
+      trustedIPs:
+        - "0.0.0.0/0"
+  web:
+    forwardedHeaders:
+      trustedIPs:
+        - "0.0.0.0/0"

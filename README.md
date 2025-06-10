@@ -112,3 +112,11 @@ As with every project, there are some issues that I encountered while setting up
       I usually use cert-manager to manage certificates, but in this case it was specified to store the certificate in a pvc. Therefore the API was also written in a way that it can use a self-signed certificate. Meaning that the API is already using HTTPS and traefik should not terminate the TLS connection.
 
       
+- `Traefik geoip setup`
+    **Description**: 
+    The geoip middleware was not working as expected. It was adding the country code to the request header after the request was routed by traefik in the ingress route.
+
+    **Solution**: 
+    - Removed the geoip middleware from the load balancer.
+    - Instead, used a cloudflare proxy that adds the country code to the request header before it reaches the load balancer.
+    - This way, the country code is added to the request header before traefik decides which service to route the request to.
