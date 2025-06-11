@@ -1,3 +1,5 @@
+kubeconfigs/local/*.yaml
+kubeconfigs/azure/*.yaml
 kubeconfigs/*.yaml
 terraform.tfvars
 .terraform*

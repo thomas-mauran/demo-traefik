@@ -1,0 +1,72 @@
+#!/bin/bash
+set -eux
+
+# Install dependencies
+apt-get update -y
+apt-get install -y curl openssl
+
+# Use values provided by Terraform
+PUBLIC_IP="${PUBLIC_IP}"
+HOSTNAME="vm-${REGION}"
+CN="${CN}"
+
+case "$HOSTNAME" in
+  *us*)
+    CN="api.us"
+    ;;
+  *eu*)
+    CN="api.eu"
+    ;;
+  *lb*)
+    CN="api.lb"
+    ;;
+  *)
+    CN="api.local"
+    ;;
+esac
+
+# Generate OpenSSL cert config
+cat > /tmp/cert.conf <<EOF
+[req]
+distinguished_name = req_distinguished_name
+req_extensions = v3_req
+prompt = no
+
+[req_distinguished_name]
+CN = ${CN}
+O = DevOrg
+
+[v3_req]
+keyUsage = keyEncipherment, dataEncipherment
+extendedKeyUsage = serverAuth
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = ${CN}
+IP.1 = ${PUBLIC_IP}
+EOF
+
+mkdir -p /mnt/data
+openssl req -x509 -nodes -days 365 \
+  -newkey rsa:2048 \
+  -keyout /mnt/data/key.pem \
+  -out /mnt/data/cert.pem \
+  -config /tmp/cert.conf \
+  -extensions v3_req
+
+rm /tmp/cert.conf
+
+# Install k3s
+K3S_EXTRA_ARGS=""
+if [[ "$HOSTNAME" == *"lb"* ]]; then
+  K3S_EXTRA_ARGS="--disable traefik"
+fi
+
+curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="$K3S_EXTRA_ARGS" sh -s - --write-kubeconfig-mode 644 --tls-san ${PUBLIC_IP}
+
+# Apply Traefik CRDs if load balancer
+if [[ "$HOSTNAME" == *"lb"* ]]; then
+  export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+  kubectl apply -f https://raw.githubusercontent.com/traefik/traefik/v3.4/docs/content/reference/dynamic-configuration/kubernetes-crd-definition-v1.yml
+  kubectl apply -f https://raw.githubusercontent.com/traefik/traefik/v3.4/docs/content/reference/dynamic-configuration/kubernetes-crd-rbac.yml
+fi

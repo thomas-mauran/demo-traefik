@@ -1,14 +1,14 @@
 locals {
   kubeconfigs = {
     local = {
-      us = "${path.module}/kubeconfigs/local/kubeconfig-vm-us.yaml"
-      eu = "${path.module}/kubeconfigs/local/kubeconfig-vm-eu.yaml"
-      lb = "${path.module}/kubeconfigs/local/kubeconfig-vm-lb.yaml"
+      us = "./kubeconfigs/local/kubeconfig-vm-us.yaml"
+      eu = "./kubeconfigs/local/kubeconfig-vm-eu.yaml"
+      lb = "./kubeconfigs/local/kubeconfig-vm-lb.yaml"
     }
     azure = {
-      us = "${path.module}/kubeconfigs/azure/kubeconfig-vm-us.yaml"
-      eu = "${path.module}/kubeconfigs/azure/kubeconfig-vm-us.yaml"
-      lb = "${path.module}/kubeconfigs/azure/kubeconfig-vm-us.yaml"
+      us = "./kubeconfigs/azure/kubeconfig-vm-us.yaml"
+      eu = "./kubeconfigs/azure/kubeconfig-vm-us.yaml"
+      lb = "./kubeconfigs/azure/kubeconfig-vm-us.yaml"
     }
   }
 

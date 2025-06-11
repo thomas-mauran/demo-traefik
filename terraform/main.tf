@@ -1,5 +1,5 @@
 # Azure US
-module "azure-us-infra" {
+module "azure_us_infra" {
   source = "./modules/azure-k3s"
   
   region = "us"
@@ -13,6 +13,19 @@ module "azure-us-infra" {
     helm       = helm.us
     azurerm    = azurerm
   }
+}
+
+module "api_deployment_us" {
+  source = "./modules/api-deployment"
+  
+  region = "us"
+  
+  providers = {
+    kubernetes = kubernetes.us
+    helm       = helm.us
+  }
+
+  depends_on = [ module.azure_us_infra ]
 }
 # Deploy to US environment
 # module "api_deployment_us" {

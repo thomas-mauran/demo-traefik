@@ -1,3 +1,14 @@
+locals {
+  hostname = "vm-${var.region}"
+
+  cn = (
+    can(regex("us", local.hostname)) ? "api.us" :
+    can(regex("eu", local.hostname)) ? "api.eu" :
+    can(regex("lb", local.hostname)) ? "api.lb" :
+    "api.local"
+  )
+}
+
 # API namespace to deploy our app
 resource "azurerm_resource_group" "vm_rg" {
   name     = "${var.region}-group"
@@ -60,7 +71,44 @@ resource "azurerm_network_security_group" "main" {
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
+
+  security_rule {
+    name                       = "K8s-API"
+    priority                   = 1002
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "6443"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
+    name                       = "HTTP"
+    priority                   = 1003
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "80"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
+    name                       = "HTTPS"
+    priority                   = 1004
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "443"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
 }
+
 
 # Associate the sec group with the network interface
 resource "azurerm_network_interface_security_group_association" "main" {
@@ -76,9 +124,8 @@ resource "azurerm_virtual_machine" "main" {
   network_interface_ids = [azurerm_network_interface.main.id]
   vm_size               = "Standard_B1ms"
 
-  delete_os_disk_on_termination = true
-
-  delete_data_disks_on_termination = true
+  delete_os_disk_on_termination     = true
+  delete_data_disks_on_termination  = true
 
   storage_image_reference {
     publisher = "Canonical"
@@ -86,20 +133,25 @@ resource "azurerm_virtual_machine" "main" {
     sku       = "22_04-lts"
     version   = "latest"
   }
+
   storage_os_disk {
     name              = "myosdisk1"
     caching           = "ReadWrite"
     create_option     = "FromImage"
     managed_disk_type = "Standard_LRS"
   }
+
   os_profile {
-    computer_name  = "hostname"
+    computer_name = "vm-${var.region}"
     admin_username = var.vm_admin_username
     admin_password = var.vm_admin_password
-
-    custom_data = filebase64("${path.module}/cloud-inits/regional-server.sh")
-
+    custom_data = base64encode(templatefile("${path.module}/cloud-inits/install_k3s_with_tls.tftpl", {
+      PUBLIC_IP = azurerm_public_ip.main.ip_address
+      REGION     = var.region
+      CN         = local.cn
+    }))
   }
+
   os_profile_linux_config {
     disable_password_authentication = true
 
@@ -110,7 +162,7 @@ resource "azurerm_virtual_machine" "main" {
   }
 }
 
-resource "null_resource" "install_k3s" {
+resource "null_resource" "wait_for_kubeconfig" {
   depends_on = [azurerm_virtual_machine.main]
 
   connection {
@@ -120,31 +172,34 @@ resource "null_resource" "install_k3s" {
     private_key = file(var.vm_ssh_private_key_path)
   }
 
-  provisioner "remote-exec" {
-    inline = [
-      "curl -sfL https://get.k3s.io | sh -s - --write-kubeconfig-mode 644 --tls-san ${azurerm_public_ip.main.ip_address}"
-    ]
-  }
+    provisioner "remote-exec" {
+      inline = [
+        <<-EOF
+        bash -c '
+        echo "Waiting for /etc/rancher/k3s/k3s.yaml to be created..."
+        for i in $(seq 1 24); do
+          if [ -f /etc/rancher/k3s/k3s.yaml ]; then
+            echo "k3s.yaml found!"
+            break
+          else
+            echo "Waiting for k3s.yaml... attempt $i"
+            sleep 5
+          fi
+        done
+        if [ ! -f /etc/rancher/k3s/k3s.yaml ]; then
+          echo "ERROR: /etc/rancher/k3s/k3s.yaml not found after waiting period"
+          exit 1
+        fi
+        sed "s|https://127.0.0.1:6443|https://${azurerm_public_ip.main.ip_address}:6443|" /etc/rancher/k3s/k3s.yaml > /tmp/kubeconfig.yaml
+        sudo chown ${var.vm_admin_username}:${var.vm_admin_username} /tmp/kubeconfig.yaml
+        '
+        EOF
+      ]
+    }
 }
 
-resource "null_resource" "get_kubeconfig" {
-  depends_on = [null_resource.install_k3s]
-
-  connection {
-    type        = "ssh"
-    user        = var.vm_admin_username
-    host        = azurerm_public_ip.main.ip_address
-    private_key = file(var.vm_ssh_private_key_path)
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "echo 'Waiting for kubeconfig...'",
-      "for i in {1..24}; do [ -f /etc/rancher/k3s/k3s.yaml ] && break || sleep 5; done",
-      "sudo cp /etc/rancher/k3s/k3s.yaml /tmp/kubeconfig.yaml",
-      "sudo chown ${var.vm_admin_username}:${var.vm_admin_username} /tmp/kubeconfig.yaml"
-    ]
-  }
+resource "null_resource" "fetch_kubeconfig" {
+  depends_on = [null_resource.wait_for_kubeconfig]
 
   provisioner "local-exec" {
     command = <<EOT

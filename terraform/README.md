@@ -9,15 +9,14 @@ We are using terraform workspaces to manage different environments. The workspac
 # To create the workspaces, run the following commands:
 
 ```bash
-
 terraform workspace new local
 terraform workspace new azure
-terraform init
 ```
 
 ### Local deployment (with the Vagrant VMs) 
 ```bash
 terraform workspace select local
+terraform init
 ```
 
 ### Azure test
@@ -29,6 +28,7 @@ brew install azure-cli
 ```
 ```bash
 terraform workspace select azure
+terraform init
 ```
 ```bash
 az login
@@ -43,7 +43,11 @@ cat ~/.ssh/azure_vm.pub # Put that value in the `azure.tfvars` file
 ```bash
 
 ```bash
-terraform apply -var-file=azure.tfvars
+# Create the Infrastructure on Azure
+terraform apply -target=module.azure_us_infra
+
+# Deploy the API on Azure
+terraform apply -target=module.api_deployment_us
 ```
 
 
