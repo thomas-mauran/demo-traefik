@@ -19,3 +19,45 @@ variable "vm_ssh_public_key" {
 variable "vm_ssh_private_key_path" {
   type = string
 }
+
+variable "environments" {
+  type = map(object({
+    region          = string
+    host            = string
+    deployment_type = string
+    providers       = object({
+      kubernetes = string
+      helm       = string
+    })
+  }))
+
+  default = {
+    us = {
+      region          = "us"
+      host            = "us.thomas-mauran.com"
+      deployment_type = "api"
+      providers = {
+        kubernetes = "us"
+        helm       = "us"
+      }
+    }
+    eu = {
+      region          = "eu"
+      host            = "eu.thomas-mauran.com"
+      deployment_type = "api"
+      providers = {
+        kubernetes = "eu"
+        helm       = "eu"
+      }
+    }
+    lb = {
+      region          = "eu"
+      host            = "lb.thomas-mauran.com"
+      deployment_type = "lb"
+      providers = {
+        kubernetes = "lb"
+        helm       = "lb"
+      }
+    }
+  }
+}

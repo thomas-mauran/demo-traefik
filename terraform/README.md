@@ -40,14 +40,23 @@ Generate the ssh keys for the VMs:
 ```bash
 ssh-keygen -t rsa -b 2048 -f ~/.ssh/azure_vm
 cat ~/.ssh/azure_vm.pub # Put that value in the `azure.tfvars` file
-```bash
+```
+
+Right now the deployment in Azure is in 2 steps, first we create the infrastructure (the VMs and the load balancer) and then we deploy the API and lb on the clusters.
 
 ```bash
 # Create the Infrastructure on Azure
-terraform apply -target=module.azure_us_infra
+terraform apply \
+  -target=module.infra_us \
+  -target=module.infra_eu \
+  -target=module.infra_lb
+
 
 # Deploy the API on Azure
-terraform apply -target=module.api_deployment_us
+terraform apply \
+  -target=module.api_deployment_us \
+  -target=module.api_deployment_eu \
+  -target=module.lb_deployment
 ```
 
 

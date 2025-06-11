@@ -59,15 +59,15 @@ resource "helm_release" "api" {
   ]
   create_namespace = true
 
-  # Override the host value using the region variable
+  # Override the host value using the host variable
   set = [{
     name  = "ingress.hosts[0].host"
-    value = "api.${var.region}"
+    value = "${var.host}"
   }]
 
 
   depends_on = [
     kubernetes_namespace.api-namespace,
-    # kubernetes_persistent_volume_claim.api-pvc
   ]
 }
+

@@ -8,6 +8,19 @@ variable "region" {
   }
 }
 
+variable "deployment_type" {
+  type = string
+
+  validation {
+    condition     = var.deployment_type == "api" || var.deployment_type == "lb"
+    error_message = "deployment_type must be an api or a lb"
+  }
+}
+
+variable "host" {
+  type = string
+}
+
 variable "vm_admin_username" {
   type = string
 }
