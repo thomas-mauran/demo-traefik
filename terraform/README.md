@@ -59,7 +59,6 @@ terraform apply \
   -target=module.lb_deployment
 ```
 
-
 ### Api deployment module
 This module deploys the foobar API.
 

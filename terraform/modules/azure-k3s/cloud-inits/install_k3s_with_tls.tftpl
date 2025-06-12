@@ -33,6 +33,9 @@ fi
 
 curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="$K3S_EXTRA_ARGS" sh -s - --write-kubeconfig-mode 644 --tls-san ${PUBLIC_IP}
 
+# Install the cert-manager crds
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.18.0/cert-manager.crds.yaml
+
 # Apply Traefik CRDs if load balancer
 if [[ "$DEPLOYMENT_TYPE" == *"lb"* ]]; then
   export KUBECONFIG=/etc/rancher/k3s/k3s.yaml

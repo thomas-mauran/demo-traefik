@@ -7,19 +7,19 @@ output "us_ssh" {
 }
 
 
-output "eu_vm_ip" {
-  value = module.infra_eu.public_ip_address
-}
+# output "eu_vm_ip" {
+#   value = module.infra_eu.public_ip_address
+# }
 
-output "eu_ssh" {
-  value = module.infra_eu.ssh_connection_string
-}
+# output "eu_ssh" {
+#   value = module.infra_eu.ssh_connection_string
+# }
 
 
-output "lb_vm_ip" {
-  value = module.infra_lb.public_ip_address
-}
+# output "lb_vm_ip" {
+#   value = module.infra_lb.public_ip_address
+# }
 
-output "lb_ssh" {
-  value = module.infra_lb.ssh_connection_string
-}
+# output "lb_ssh" {
+#   value = module.infra_lb.ssh_connection_string
+# }

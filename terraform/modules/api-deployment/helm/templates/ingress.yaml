@@ -12,7 +12,7 @@ spec:
     - websecure
   routes:
     {{- range .Values.ingress.hosts }}
-    - match: Host(`{{ .host }}`)
+    - match: HostRegexps(`{{ .host }}`)
       kind: Rule
       services:
         - name: {{ include "api.fullname" $ }}
@@ -20,8 +20,16 @@ spec:
           scheme: https
           serversTransport: api-transport
     {{- end }}
+    # Fallback route: catch all
+    - match: PathPrefix(`/`)
+      kind: Rule
+      services:
+        - name: {{ include "api.fullname" . }}
+          port: {{ .Values.service.port }}
+          scheme: https
+          serversTransport: api-transport
   tls:
-    passthrough: true  # Since the go api is already handling https we need to do so to use traefik as just a reverse proxy without tls
+    secretName: api-tls
 ---
 apiVersion: traefik.io/v1alpha1
 kind: ServersTransport
