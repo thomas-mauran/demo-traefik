@@ -34,7 +34,7 @@ const (
 var (
 	cert string
 	key  string
-	ca   string
+	// ca   string
 	port string
 	name string
 )
