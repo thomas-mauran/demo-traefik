@@ -16,6 +16,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	"github.com/gorilla/websocket"
 )
 
@@ -29,15 +32,36 @@ const (
 )
 
 var (
-	// cert string
-	// key  string
-	// ca   string
+	cert string
+	key  string
+	ca   string
 	port string
 	name string
 )
 
+var (
+	httpRequestsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "http_requests_total",
+			Help: "Total number of HTTP requests",
+		},
+		[]string{"path", "method"},
+	)
+
+	httpRequestDuration = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "http_request_duration_seconds",
+			Help:    "Histogram of response time for handler.",
+			Buckets: prometheus.DefBuckets,
+		},
+		[]string{"path"},
+	)
+)
+
 func init() {
 	flag.StringVar(&port, "port", "80", "give me a port number")
+	flag.StringVar(&cert, "cert", "/cert/cert.pem", "give me a cert path")
+	flag.StringVar(&key, "key", "/cert/key.pem", "give me a key path")
 	flag.StringVar(&name, "name", os.Getenv("WHOAMI_NAME"), "give me a name")
 }
 
@@ -49,12 +73,18 @@ var upgrader = websocket.Upgrader{
 func main() {
 	flag.Parse()
 
-	http.HandleFunc("/data", dataHandler)
-	http.HandleFunc("/echo", echoHandler)
-	http.HandleFunc("/bench", benchHandler)
-	http.HandleFunc("/", whoamiHandler)
-	http.HandleFunc("/api", apiHandler)
-	http.HandleFunc("/health", healthHandler)
+	prometheus.MustRegister(httpRequestsTotal)
+	prometheus.MustRegister(httpRequestDuration)
+
+	http.Handle("/metrics", promhttp.Handler()) // expose Prometheus metrics
+
+	http.HandleFunc("/data", instrumentHandler("/data", dataHandler))
+	http.HandleFunc("/echo", instrumentHandler("/echo", echoHandler))
+	http.HandleFunc("/bench", instrumentHandler("/bench", benchHandler))
+	http.HandleFunc("/", instrumentHandler("/", whoamiHandler))
+	http.HandleFunc("/api", instrumentHandler("/api", apiHandler))
+	http.HandleFunc("/health", instrumentHandler("/health", healthHandler))
+
 
 	fmt.Println("Starting up on port " + port)
 
@@ -62,16 +92,16 @@ func main() {
 		Addr: ":" + port,
 	}
 
-	_, err := os.Stat("/cert/cert.pem")
+	_, err := os.Stat(cert)
 	if err != nil {
-		log.Fatal("You need to provide a certificate")
+		log.Fatal("You need to provide a certificate path using the -cert argument")
 	}
 
-	_, err = os.Stat("/cert/key.pem")
+	_, err = os.Stat(key)
 	if err != nil {
-		log.Fatal("You need to provide a certificate")
+		log.Fatal("You need to provide a key path using the -key argument")
 	}
-	log.Fatal(server.ListenAndServeTLS("/cert/cert.pem", "/cert/key.pem"))
+	log.Fatal(server.ListenAndServeTLS(cert, key))
 }
 
 // func _setupMutualTLS(ca string) *tls.Config {
@@ -301,4 +331,16 @@ func fillContent(length int64) io.ReadSeeker {
 	}
 
 	return bytes.NewReader(b)
+}
+
+func instrumentHandler(path string, handler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		httpRequestsTotal.WithLabelValues(path, r.Method).Inc()
+
+		handler(w, r)
+
+		duration := time.Since(start).Seconds()
+		httpRequestDuration.WithLabelValues(path).Observe(duration)
+	}
 }

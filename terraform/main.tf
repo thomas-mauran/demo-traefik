@@ -59,7 +59,7 @@ module "infra_lb" {
 module "api_deployment_us" {
   source = "./modules/api-deployment"
   host   =   var.environments["us"].host
-
+  name   = "us"
   providers = {
     kubernetes = kubernetes.us
     helm       = helm.us
@@ -71,7 +71,7 @@ module "api_deployment_us" {
 module "api_deployment_eu" {
   source = "./modules/api-deployment"
   host   = var.environments["eu"].host
-
+  name   = "eu"
   providers = {
     kubernetes = kubernetes.eu
     helm       = helm.eu
@@ -105,7 +105,7 @@ module "lb_deployment" {
 module "api_deployment_us_local" {
   source = "./modules/api-deployment"
   host = "api.us"
-  
+  name = "us"
   providers = {
     kubernetes = kubernetes.us
     helm       = helm.us
@@ -116,6 +116,7 @@ module "api_deployment_us_local" {
 module "api_deployment_eu_local" {
   source = "./modules/api-deployment"
   host = "api.eu"
+  name = "eu"
   
   providers = {
     kubernetes = kubernetes.eu
