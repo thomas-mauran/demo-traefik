@@ -14,16 +14,55 @@ resource "helm_release" "traefik" {
   ]
 }
 
+# Cert manager and generation of the certs if we are in azure mode
+resource "helm_release" "cert_manager" {
+  count      = terraform.workspace == "azure" ? 1 : 0
+  name       = "cert-manager"
+  repository = "https://charts.jetstack.io"
+  chart      = "cert-manager"
+  namespace  = "cert-manager"
+  version    = "v1.18.0"
+  create_namespace = true
+}
+
+resource "kubernetes_manifest" "cert_cluster_issuer" {
+  count = terraform.workspace == "azure" ? 1 : 0
+  manifest = yamldecode(templatefile("${path.module}/helm/cert-manager/cluster-issuer.tpl.yaml", {
+    host = var.host
+  }))
+  depends_on = [helm_release.cert_manager]
+}
+
+resource "kubernetes_manifest" "cert_certificate" {
+  count = terraform.workspace == "azure" ? 1 : 0
+
+  manifest = yamldecode(templatefile("${path.module}/helm/cert-manager/certificate.tpl.yaml", {
+    namespace   = "default"
+    secret_name = "api-tls"
+    common_name = var.host
+    issuer_name = "letsencrypt-prod"
+  }))
+
+  depends_on = [
+    kubernetes_manifest.cert_cluster_issuer,
+  ]
+}
+
+
 // External services
 resource "kubernetes_manifest" "external_us_service" {
-  manifest = yamldecode(file("${path.module}/helm/external-us-service.yaml"))
-
+  manifest = yamldecode(templatefile("${path.module}/helm/external-service.tpl.yaml", {
+    region = "us"
+    url = terraform.workspace == "azure"  ? "us.${var.global_host}" : "api.us"
+  }))
   depends_on = [helm_release.traefik]
 }
 
 resource "kubernetes_manifest" "external_eu_service" {
-  manifest = yamldecode(file("${path.module}/helm/external-eu-service.yaml"))
-
+  manifest = yamldecode(templatefile("${path.module}/helm/external-service.tpl.yaml", {
+    region = "eu"
+    url = terraform.workspace == "azure" ? "eu.${var.global_host}" : "api.eu"
+  }))
   depends_on = [helm_release.traefik]
 }
 
@@ -54,9 +93,14 @@ resource "kubernetes_manifest" "middleware_us_header" {
   depends_on = [helm_release.traefik]
 }
 
-// Ingress route
+// Ingress route depending on the workspace azure or local
 resource "kubernetes_manifest" "ingressroute" {
-  manifest = yamldecode(file("${path.module}/helm/ingressroute-roundrobin.yaml"))
+  manifest = yamldecode(templatefile(
+    terraform.workspace == "azure" ? "${path.module}/helm/ingressroute-geoip.tpl.yaml" : "${path.module}/helm/ingressroute-roundrobin.tpl.yaml",
+    {
+      global_host = var.global_host
+    }
+  ))
 
   depends_on = [
     helm_release.traefik,

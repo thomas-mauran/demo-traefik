@@ -1,2 +1,4 @@
 .vagrant
+kubeconfigs/local/*.yaml
 kubeconfigs/*.yaml
+kubeconfigs/azure/*.yaml

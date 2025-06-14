@@ -1,0 +1,40 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: copy-api-cert
+  namespace: api
+spec:
+  backoffLimit: 5
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: copy
+          image: busybox
+          command:
+            - /bin/sh
+            - -c
+          args:
+            - |
+              echo "Waiting for secret..."
+              for i in $(seq 1 30); do
+                [ -f /certs/tls.crt ] && [ -f /certs/tls.key ] && break
+                echo "Secret not ready, sleeping..."
+                sleep 10
+              done
+              cp /certs/tls.crt /mnt/data/cert.pem && cp /certs/tls.key /mnt/data/key.pem
+          volumeMounts:
+            - name: certs
+              mountPath: /certs
+              readOnly: true
+            - name: data
+              mountPath: /mnt/data
+      volumes:
+        - name: certs
+          secret:
+            secretName: api-tls
+        - name: data
+          hostPath:
+            path: /mnt/data
+            type: DirectoryOrCreate

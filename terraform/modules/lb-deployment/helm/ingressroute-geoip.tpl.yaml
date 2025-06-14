@@ -1,0 +1,33 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: geoip-routing
+  namespace: default
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    # Route for US, CA, MX, etc (maybe I am missing some here)
+    - match: |
+        Host(`lb.${global_host}`) && 
+        (HeaderRegexp(`Cf-Ipcountry`, `^(US|CA|MX|BR|AR|CL|CO|PE|VE|UY|BO|EC|GT|CU|DO|HN|PY|NI|SV|CR|PA|JM|TT|GY|SR|BZ)$`))
+      kind: Rule
+      services:
+        - name: us-remote-service
+          kind: Service
+          port: 443
+          scheme: https
+          serversTransport: api-transport
+          passHostHeader: false
+    # Default fallback route: everyone else goes to EU
+    - match: Host(`lb.${global_host}`)
+      kind: Rule
+      services:
+        - name: eu-remote-service
+          kind: Service
+          port: 443
+          scheme: https
+          serversTransport: api-transport
+          passHostHeader: false
+  tls:
+    secretName: api-tls

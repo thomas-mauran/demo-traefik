@@ -1,17 +1,34 @@
-# Demo Traefik
+# Distributed API Deployment Demo
 
-The goal of this project is to setup [this](https://github.com/containous/foobar-api) API and expose it through https.
+This project demonstrates a distributed deployment of a simple API across two regions (EU and US) with a Traefik-based load balancer in front. The deployment supports two modes:
 
-- The certificate needs to be stored in a persistent volume for the API.
-- The API must be deployed on 2 datacenters (EU and US) and load balanced through a third node.
+- **Local deployment** using Vagrant and VirtualBox
+- **Cloud deployment** on Azure using Terraform
 
+Each deployment creates:
+- A **US node** (K3s cluster)
+- An **EU node** (K3s cluster)
+- A **Load Balancer node** (Traefik)
 
-#### Vagrant Virtual Machines
+---
 
-To replicate the different clusters and the load balancer, we will use Vagrant to create 3 virtual machines:
-- `vm-eu`: The European cluster
-- `vm-us`: The US cluster
-- `vm-lb`: The Load Balancer
+## Deployment Options
+
+### 1. Local Deployment (Vagrant + Terraform)
+
+Use this setup to simulate a multi-region deployment locally.
+
+Refer to the [Vagrant Setup Guide](./vagrant/README.md) for instructions to:
+
+- Install Vagrant and VirtualBox
+- Start the 3 virtual machines: `vm-eu`, `vm-us`, and `vm-lb`
+- Automatically export the kubeconfigs to the Terraform directory
+
+Then, follow the **local workspace** section in the [Terraform README](./terraform/README.md#local-deployment-with-the-vagrant-vms) to deploy the API and load balancer.
+
+#### Local Infrastructure Schema
+
+The local environment simulates 3 regional nodes on a single host:
 
 ```mermaid
 graph TD
@@ -39,50 +56,94 @@ graph TD
     VMLB --> TRAEFIKEU
 ```
 
-##### Deployment
-To deploy the Vagrant virtual machines, follow these steps:
-1. Install [Vagrant](https://www.vagrantup.com/downloads) and [VirtualBox](https://www.virtualbox.org/wiki/Downloads).
-2. Install a virtualization provider, such as [VirtualBox](https://www.virtualbox.org/wiki/Downloads).
-3. Start the Vagrant VM:
-    ```bash
-    vagrant up
-    ```
-   As defined in the `Vagrantfile`. This will create the 3 VMs: `vm-eu`, `vm-us`, and `vm-lb`.
-   The command will also copy the kubeconfig files from the VMs to the `terraform/kubeconfigs` directory.
-4. SSH into a VM:
-    ```bash
-    vagrant ssh vm-us
-    ```
+#### Vagrant Virtual Machines
 
-#### GitOps approach
-This project uses a GitOps approach to manage the Kubernetes resources. The whole project is deployable using the `terraform` directory, which contains the necessary Terraform scripts to create the infrastructure and deploy the Kubernetes resources.
+To replicate the different clusters and the load balancer, we will use Vagrant to create 3 virtual machines:
+- `vm-eu`: The European cluster
+- `vm-us`: The US cluster
+- `vm-lb`: The Load Balancer
 
-How to deploy the project:
 
-:warning: Make sure you already deployed the Vagrant VMs in the past section. This will create the necessary kubeconfig files in the `terraform/kubeconfigs` directory.
 
-- Install [Terraform](https://www.terraform.io/downloads.html) and [kubectl](https://kubernetes.io/docs/tasks/tools/).
+### 2. Azure Deployment (Terraform)
 
-In the `terraform` directory, run the following commands:
-```bash
-terraform init
-terraform apply
+Use this setup to deploy the full environment into Azure.
+
+Refer directly to the [Terraform README](./terraform/README.md#azure-deployment-terraform) for instructions to:
+
+- Set up Azure authentication
+- Create the infrastructure via Terraform
+- Update Cloudflare DNS for routing
+- Deploy the API and load balancer using Terraform modules
+
+#### Azure Infrastructure Schema
+
+
+```mermaid
+graph TD
+    User["User"]
+    CF["Cloudflare Proxy"]
+    LB["Load Balancer VM (Traefik)"]
+    
+    subgraph Azure: EU Region
+        VM_EU["EU Node (K3s)"]
+        VNet_EU["VNet (EU)"]
+        NSG_EU["NSG (EU)"]
+    end
+
+    subgraph Azure: US Region
+        VM_US["US Node (K3s)"]
+        VNet_US["VNet (US)"]
+        NSG_US["NSG (US)"]
+    end
+
+    User --> CF
+    CF -->|Adds 'Cf-Ipcountry' Header| LB
+
+    LB -->|Geo Routing| VM_EU
+    LB -->|Geo Routing| VM_US
+
+    VM_US --> VNet_US
+    VM_US --> NSG_US
+
+    VM_EU --> VNet_EU
+    VM_EU --> NSG_EU
 ```
 
-Then add the following lines to your `/etc/hosts` file:
+---
 
-```bash
-192.168.56.10	api.us
-192.168.56.11	api.eu
-```
+## GitOps & CI/CD Philosophy
 
-Then you can access the API through the following URLs:
-- https://api.us
-- https://api.eu
+This project follows **GitOps principles** to manage infrastructure and deployments.
+
+### Why GitOps?
+
+- **Declarative Infrastructure:** All environments (local, cloud) are defined as code using Terraform.
+- **Single Source of Truth:** Everything is versioned in Git.
+- **Consistency:** Apply the same Terraform modules locally or in Azure.
+
+### Tools Used
+
+- **Terraform** for IaC (Infrastructure as Code)
+- **Vagrant** for local VM management
+- **Kubernetes** for container orchestration
+- **Github Action** for packaging the API image and pushing it to the ghcr registry
+- **K3s** for lightweight Kubernetes clusters
+- **Traefik** as the Ingress/load balancing layer
+- **Cloudflare** for DNS and geolocation header injection
+
+---
+
+### Possible Improvements
+
+As always things can always be improved. Here are some ideas for future improvements:
+
+- **ArgoCD**: I usually use ArgoCD to manage the deployments, but in this case I wanted to keep it simple and use Terraform to deploy the API and load balancer. However, if the API had a proper development lifecycle, I would use ArgoCD with a classic app of apps pattern to manage the deployments.
+
 
 ### Problems tracking
 
-As with every project, there are some issues that I encountered while setting up this demo. Here is a list of the most common issues and their solutions:
+As with every project, there are some issues that we encountered while setting up this demo. Here is a list of the most common issues and their solutions:
 
 - Issue with Vagrant on macOS:
     **Description**: 
@@ -99,7 +160,7 @@ As with every project, there are some issues that I encountered while setting up
     **Solution**: 
     - https://forums.virtualbox.org/viewtopic.php?t=102615
     - Install extra packages for VirtualBox:
-    - use a ARM image of ubuntu, since I am on an M1 Mac.
+    - use a ARM image of ubuntu, since this setup is running am on an M1 Mac.
 
 - `http: TLS handshake error from 10.42.0.18:42462: remote error: tls: bad certificate`
     **Description**: 

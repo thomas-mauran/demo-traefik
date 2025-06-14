@@ -12,6 +12,7 @@ We are gonna use Vagrant to create a virtual machine that will run the demo appl
 2. Install a virtualization provider, such as [VirtualBox](https://www.virtualbox.org/wiki/Downloads).
 3. Start the Vagrant VM:
    ```bash
+   cd vagrant
    vagrant up
    ```
 As defined in the `Vagrantfile`. This will create the 3 VMs: `vm-eu`, `vm-us`, and `vm-lb`.

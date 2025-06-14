@@ -1,0 +1,44 @@
+#!/bin/bash
+set -eux
+
+# Install dependencies
+apt-get update -y
+apt-get install -y curl openssl
+
+# Use values provided by Terraform
+PUBLIC_IP="${PUBLIC_IP}"
+DEPLOYMENT_TYPE="${DEPLOYMENT_TYPE}"
+HOSTNAME="vm-${REGION}"
+
+mkdir -p /var/lib/rancher/k3s/server/manifests
+cat <<EOF > /var/lib/rancher/k3s/server/manifests/traefik-config.yaml
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    logs:
+      general:
+        level: "TRACE"
+    accessLog: {}
+EOF
+
+# Install k3s
+K3S_EXTRA_ARGS=""
+if [[ "$DEPLOYMENT_TYPE" == *"lb"* ]]; then
+  K3S_EXTRA_ARGS="--disable traefik"
+fi
+
+curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="$K3S_EXTRA_ARGS" sh -s - --write-kubeconfig-mode 644 --tls-san ${PUBLIC_IP}
+
+# Install the cert-manager crds
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.18.0/cert-manager.crds.yaml
+
+# Apply Traefik CRDs if load balancer
+if [[ "$DEPLOYMENT_TYPE" == *"lb"* ]]; then
+  export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+  kubectl apply -f https://raw.githubusercontent.com/traefik/traefik/v3.4/docs/content/reference/dynamic-configuration/kubernetes-crd-definition-v1.yml
+  kubectl apply -f https://raw.githubusercontent.com/traefik/traefik/v3.4/docs/content/reference/dynamic-configuration/kubernetes-crd-rbac.yml
+fi

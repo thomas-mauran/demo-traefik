@@ -1,4 +1,4 @@
 # Region of the cluster
-variable "region" {
+variable "host" {
   type = string
 }
