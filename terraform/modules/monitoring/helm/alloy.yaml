@@ -1,0 +1,57 @@
+metrics:
+  enabled: true
+
+alloy:
+  configMap:
+    content: |-
+      // Global settings
+      livedebugging {
+        enabled = true
+      }
+
+      logging {
+        level  = "debug"
+        format = "logfmt"
+      }
+
+      prometheus.remote_write "metrics_service" {
+        endpoint {
+          url = "${hosted_prometheus_metrics_url}"
+          basic_auth {
+            username = "${hosted_prometheus_username}"
+            password = "${hosted_prometheus_token}"
+          }
+        }
+      }
+
+      discovery.kubernetes "apps" {
+        role = "pod"
+
+        selectors {
+          role = "pod"
+          label = "app.kubernetes.io/name=api"
+        }
+
+        namespaces {
+          names = ["api"]
+        }
+      }
+
+      prometheus.scrape "go_app_metrics" {
+        targets = discovery.kubernetes.apps.targets
+        forward_to = [prometheus.remote_write.metrics_service.receiver]
+        scrape_interval = "30s"
+        metrics_path = "/metrics"
+        honor_labels = true
+        
+        // Configure HTTPS scraping
+        scheme = "https"
+        
+        // TLS configuration for HTTPS
+        tls_config {
+          insecure_skip_verify = true
+        }
+        
+        // Debug: Add job label to identify this scraper
+        job_name = "go-app-metrics"
+      }

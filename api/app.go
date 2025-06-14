@@ -45,7 +45,7 @@ var (
 			Name: "http_requests_total",
 			Help: "Total number of HTTP requests",
 		},
-		[]string{"path", "method"},
+		[]string{"app", "path", "method"},
 	)
 
 	httpRequestDuration = prometheus.NewHistogramVec(
@@ -54,7 +54,7 @@ var (
 			Help:    "Histogram of response time for handler.",
 			Buckets: prometheus.DefBuckets,
 		},
-		[]string{"path"},
+		[]string{"app", "path"},
 	)
 )
 
@@ -336,11 +336,16 @@ func fillContent(length int64) io.ReadSeeker {
 func instrumentHandler(path string, handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		httpRequestsTotal.WithLabelValues(path, r.Method).Inc()
+		appName := name
+		if appName == "" {
+			appName = "unknown"
+		}
+
+		httpRequestsTotal.WithLabelValues(appName, path, r.Method).Inc()
 
 		handler(w, r)
 
 		duration := time.Since(start).Seconds()
-		httpRequestDuration.WithLabelValues(path).Observe(duration)
+		httpRequestDuration.WithLabelValues(appName, path).Observe(duration)
 	}
 }

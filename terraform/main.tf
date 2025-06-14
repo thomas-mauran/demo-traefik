@@ -99,7 +99,6 @@ module "lb_deployment" {
   depends_on = [ module.infra_lb ]
 }
 
-
 # --- LOCAL ---
 # Deploy to US environment
 module "api_deployment_us_local" {
@@ -133,5 +132,32 @@ module "lb_deployment_local" {
   providers = {
     kubernetes = kubernetes.lb
     helm       = helm.lb
+  }
+}
+
+# Monitoring
+module "monit_us" {
+  source = "./modules/monitoring"
+
+  hosted_prometheus_metrics_url = var.hosted_prometheus_metrics_url
+  hosted_prometheus_username = var.hosted_prometheus_username
+  hosted_prometheus_token = var.hosted_prometheus_token
+
+  providers = {
+    kubernetes = kubernetes.us
+    helm       = helm.us
+  }
+}
+
+module "monit_eu" {
+  source = "./modules/monitoring"
+
+  hosted_prometheus_metrics_url = var.hosted_prometheus_metrics_url
+  hosted_prometheus_username = var.hosted_prometheus_username
+  hosted_prometheus_token = var.hosted_prometheus_token
+  
+  providers = {
+    kubernetes = kubernetes.eu
+    helm       = helm.eu
   }
 }
