@@ -24,3 +24,5 @@ spec:
           serversTransport: api-transport
           weight: 1
           passHostHeader: false
+  # tls:
+  #   secretName: api-tls

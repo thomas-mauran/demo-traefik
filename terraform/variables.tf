@@ -20,6 +20,10 @@ variable "vm_ssh_private_key_path" {
   type = string
 }
 
+variable "global_host"{
+  type = string
+  default = "localhost"
+}
 variable "environments" {
   type = map(object({
     region          = string

@@ -1,1 +1,8 @@
-azure_subscription_id = "your_azure_sub_id"
+azure_subscription_id = "<your_subscription_id>"
+
+vm_admin_password = "<your_azure_sub_id>"
+vm_admin_username = "demo-traefik"
+vm_ssh_public_key = "<ssh-rsa ...your_public_key>"
+vm_ssh_private_key_path = "<path/to/your/private_key.pem>" # for example: /Users/thomasmauran/.ssh/azure_vm 
+
+global_host = "<your_dns_name>" #for example "thomas-mauran.com"
