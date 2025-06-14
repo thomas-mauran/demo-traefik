@@ -132,16 +132,15 @@ This project follows **GitOps principles** to manage infrastructure and deployme
 - **Traefik** as the Ingress/load balancing layer
 - **Cloudflare** for DNS and geolocation header injection
 
-## Monitoring of the APIs
 
-The APIs are monitored using [Prometheus](https://prometheus.io/) and [Grafana](https://grafana.com/). The monitoring is set up in the `terraform/modules/monitoring` directory.
-The monitoring stack includes:
-- **Prometheus**: For collecting metrics from the APIs.
-- **Grafana**: For visualizing the metrics and creating dashboards.
+## Monitoring and Instrumentation
+The API is instrumented with Prometheus metrics, which can be scraped by a Prometheus instance running in the K3s clusters. This allows for monitoring of the API's performance and health.
 
-We added 2 simple custom prometheus variables to the API:
-- http_request_duration_seconds
-- http_requests_total
+Every step of the setup is detailed in [terraform/README.md](./terraform/README.md#monitoring-of-the-apis).
+
+### Tools Used
+- **Prometheus** for instrumentation and monitoring
+- **Grafana** for visualization of metrics
 
 ---
 

@@ -253,3 +253,20 @@ To fix this we need to have the geoip information sooner the easiest way to do s
 We could have used any kind of proxy in front, even another service with only traefik and the geoip middleware, but we chose to use Cloudflare proxy to demonstrate this setup.
 
 In the end even if we are not using the geoip middleware itself, it was very interesting to learn how to install traefik plugins and use middlewares.
+
+## Monitoring of the APIs
+
+The APIs are monitored using [Prometheus](https://prometheus.io/) and [Grafana](https://grafana.com/). The monitoring is set up in the `terraform/modules/monitoring` directory.
+The monitoring stack includes:
+- **Prometheus**: For collecting metrics from the APIs.
+- **Grafana**: For visualizing the metrics and creating dashboards.
+
+We added 2 simple custom prometheus variables to the API:
+- http_request_duration_seconds
+- http_requests_total
+
+```bash
+terraform apply \
+  -target=module.monit_us \
+  -target=module.monit_eu
+```
