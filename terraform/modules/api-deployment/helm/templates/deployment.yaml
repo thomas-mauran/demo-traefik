@@ -45,6 +45,11 @@ spec:
             - name: http
               containerPort: {{ .Values.service.port }}
               protocol: TCP
+          {{- if .Values.env.enabled }}
+          env:
+            - name: WHOAMI_NAME
+              value: "{{ .Values.env.name }}"
+          {{- end }}
           {{- with .Values.livenessProbe }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}

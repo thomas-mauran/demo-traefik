@@ -1,0 +1,26 @@
+name: Lint and Test API
+on:
+  pull_request:
+
+jobs:
+  lint-api:
+    name: API linter
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - uses: actions/setup-go@v4
+      with:
+        go-version: '1.24'
+        cache: false
+
+    - name: Lint with golangci-lint
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: latest
+        working-directory: api
+
+    - name: go-test
+      run: make test
+      working-directory: api
+

@@ -109,6 +109,14 @@ resource "helm_release" "api" {
   set = [{
     name  = "ingress.hosts[0].host"
     value = "${var.host}"
+  },
+  {
+    name  = "env.enabled"
+    value = true
+  },
+  {
+    name  = "env.name"
+    value = var.name
   }]
 
 
