@@ -171,7 +171,16 @@ Every step of the setup is detailed in [terraform/README.md](./terraform/README.
 - **Prometheus** for instrumentation and monitoring
 - **Grafana** for visualization of metrics
 
+A simple dashboard is provided to visualize the API's performance metrics.
+
+[Grafana Dashboard](./grafana/dashboard.json)
+
 ---
+
+## Conclusion
+This project demonstrates how to set up a distributed API deployment across multiple regions using Terraform, Vagrant, and Traefik. It provides a solid foundation for building scalable and resilient applications that can serve users from different geographical locations.
+
+The GeoIP routing feature allows for efficient request handling based on the user's location, ensuring low latency and high availability.
 
 ### Possible Improvements
 
