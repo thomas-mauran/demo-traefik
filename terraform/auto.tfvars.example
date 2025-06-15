@@ -6,3 +6,7 @@ vm_ssh_public_key = "<ssh-rsa ...your_public_key>"
 vm_ssh_private_key_path = "<path/to/your/private_key.pem>" # for example: /Users/thomasmauran/.ssh/azure_vm 
 
 global_host = "<your_dns_name>" #for example "thomas-mauran.com"
+
+hosted_prometheus_metrics_url = "" # For example: https://prometheus-prod-1-prod-eu-central-0.grafana.net/api/prom/push
+hosted_prometheus_username = "" # For example: 2501994
+hosted_prometheus_token = "" # You have to generate a new token from the grafana hosted prometheus instance with the right write permissions
