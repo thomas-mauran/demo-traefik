@@ -32,28 +32,29 @@ The local environment simulates 3 regional nodes on a single host:
 
 ```mermaid
 graph TD
-    subgraph US_Region
-        VMUS[vm-us]
+    %% US Region
+    subgraph US_Region_vm
         TRAEFIKUS[Traefik<br>api.us]
         FOOBARUS[HTTPS Go API]
-        VMUS --> TRAEFIKUS
         TRAEFIKUS --> FOOBARUS
     end
 
-    subgraph EU_Region
-        VMEU[vm-eu]
+    %% EU Region
+    subgraph EU_Region_vm
         TRAEFIKEU[Traefik<br>api.eu]
         FOOBAREU[HTTPS Go API]
-        VMEU --> TRAEFIKEU
         TRAEFIKEU --> FOOBAREU
     end
 
-    subgraph Load_Balancer
-        VMLB[vm-lb<br>Geo LB]
+    %% Load Balancer
+    subgraph Load_Balancer_vm
+        VMLB[vm-lb<br>Roundrobin]
     end
 
-    VMLB --> TRAEFIKUS
-    VMLB --> TRAEFIKEU
+    %% Link to representative nodes in subgraphs
+    VMLB --> US_Region_vm
+    VMLB --> EU_Region_vm
+
 ```
 
 #### Vagrant Virtual Machines
@@ -110,6 +111,34 @@ graph TD
     VM_EU --> NSG_EU
 ```
 
+#### GeoIp Routing
+The load balancer uses the `Cf-Ipcountry` header from Cloudflare to route requests to the appropriate regional API based on the user's location.
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Cloudflare
+    participant LoadBalancer as "Traefik Load Balancer"
+    participant US_Node as "US Node (K3s)"
+    participant EU_Node as "EU Node (K3s)"
+
+    User->>Cloudflare: Sends Request
+    Cloudflare->>Cloudflare: Detects User IP Country
+    Cloudflare->>LoadBalancer: Forwards Request\nAdds Cf-Ipcountry Header
+
+    LoadBalancer->>LoadBalancer: Reads Cf-Ipcountry Header
+    alt Country is in US
+        LoadBalancer->>US_Node: Forwards Request
+    else Country is in EU or others
+        LoadBalancer->>EU_Node: Forwards Request
+    end
+
+    EU_Node-->>LoadBalancer: Processes and Responds
+    US_Node-->>LoadBalancer: Processes and Responds
+    LoadBalancer->>Cloudflare: Response
+    Cloudflare->>User: Returns Response
+```
+
 ---
 
 ## GitOps & CI/CD Philosophy
@@ -155,39 +184,39 @@ As always things can always be improved. Here are some ideas for future improvem
 
 As with every project, there are some issues that we encountered while setting up this demo. Here is a list of the most common issues and their solutions:
 
-- Issue with Vagrant on macOS:
-    **Description**: 
-    ```
-    There was an error while executing `VBoxManage`, a CLI used by Vagrant
-    for controlling VirtualBox. The command and stderr is shown below.
+#### Issue with Vagrant on macOS:
+**Description**: 
+```bash
+There was an error while executing `VBoxManage`, a CLI used by Vagrant
+for controlling VirtualBox. The command and stderr is shown below.
 
-    Command: ["startvm", "e1e0e3d4-1cf3-41e2-9f92-11c2c7475fa0", "--type", "headless"]
+Command: ["startvm", "e1e0e3d4-1cf3-41e2-9f92-11c2c7475fa0", "--type", "headless"]
 
-    Stderr: VBoxManage: error: The VM session was aborted
-    VBoxManage: error: Details: code NS_ERROR_FAILURE (0x80004005), component SessionMachine, interface ISession
-    ```
+Stderr: VBoxManage: error: The VM session was aborted
+VBoxManage: error: Details: code NS_ERROR_FAILURE (0x80004005), component SessionMachine, interface ISession
+```
 
-    **Solution**: 
-    - https://forums.virtualbox.org/viewtopic.php?t=102615
-    - Install extra packages for VirtualBox:
-    - use a ARM image of ubuntu, since this setup is running am on an M1 Mac.
+**Solution**: 
+- https://forums.virtualbox.org/viewtopic.php?t=102615
+- Install extra packages for VirtualBox:
+- use a ARM image of ubuntu, since this setup is running am on an M1 Mac.
 
-- `http: TLS handshake error from 10.42.0.18:42462: remote error: tls: bad certificate`
-    **Description**: 
-    Had this error when trying to access the API through the traefik reverse proxy.
-    Didn't had the issue when accessing the API directly using port forwarding.
+#### http: TLS handshake error from 10.42.0.18:42462: remote error: tls: bad certificate
+**Description**: 
+Had this error when trying to access the API through the traefik reverse proxy.
+Didn't had the issue when accessing the API directly using port forwarding.
 
-    **Solution**: 
-    - I was using a kubernetes ingress not a traefik ingress.
-    - Added `passthrough: true`, since the api is already using HTTPS with a self-signed certificate.
-      I usually use cert-manager to manage certificates, but in this case it was specified to store the certificate in a pvc. Therefore the API was also written in a way that it can use a self-signed certificate. Meaning that the API is already using HTTPS and traefik should not terminate the TLS connection.
+**Solution**: 
+- I was using a kubernetes ingress not a traefik ingress.
+- Added `passthrough: true`, since the api is already using HTTPS with a self-signed certificate.
+    I usually use cert-manager to manage certificates, but in this case it was specified to store the certificate in a pvc. Therefore the API was also written in a way that it can use a self-signed certificate. Meaning that the API is already using HTTPS and traefik should not terminate the TLS connection.
 
       
-- `Traefik geoip setup`
-    **Description**: 
-    The geoip middleware was not working as expected. It was adding the country code to the request header after the request was routed by traefik in the ingress route.
+#### Traefik geoip setup
+**Description**: 
+The geoip middleware was not working as expected. It was adding the country code to the request header after the request was routed by traefik in the ingress route.
 
-    **Solution**: 
-    - Removed the geoip middleware from the load balancer.
-    - Instead, used a cloudflare proxy that adds the country code to the request header before it reaches the load balancer.
-    - This way, the country code is added to the request header before traefik decides which service to route the request to.
+**Solution**: 
+- Removed the geoip middleware from the load balancer.
+- Instead, used a cloudflare proxy that adds the country code to the request header before it reaches the load balancer.
+- This way, the country code is added to the request header before traefik decides which service to route the request to.

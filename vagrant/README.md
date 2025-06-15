@@ -22,3 +22,4 @@ The command will also copy the kubeconfig files from the vm to the terraform/kub
    ```bash
    vagrant ssh vm-us
    ```
+

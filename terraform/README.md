@@ -2,6 +2,13 @@
 
 ## Setup
 
+### Prerequisites :warning:
+- Install [Terraform](https://www.terraform.io/downloads.html).
+- Install [kubectl](https://kubernetes.io/docs/tasks/tools/).
+- Install [Helm](https://helm.sh/docs/intro/install/).
+- Install [vagrant](https://www.vagrantup.com/downloads) and [VirtualBox](https://www.virtualbox.org/wiki/Downloads) if you want to use the local deployment with Vagrant VMs.
+- Install [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) if you want to use the Azure deployment.
+
 We are using terraform workspaces to manage different environments. The workspaces are:
 - `local`: For local development using Vagrant VMs.
 - `azure`: For deploying to Azure.
@@ -39,6 +46,14 @@ This command will deploy the API on the US and EU clusters and set up the load b
 
 In local development the loadbalancer use a round robin strategy to route the traffic to the 2 regional clusters.
 
+Modify your /etc/hosts file to add the following entries:
+
+```bash
+192.168.56.10	api.us
+192.168.56.11	api.eu
+192.168.56.12	api.lb
+```
+
 To check this round robin we can do the following command:
 
 ```bash
@@ -57,20 +72,26 @@ Prerequisites:
 ```bash
 brew install azure-cli
 ```
-```bash
-terraform workspace select azure
-terraform init
-```
+
+Login to Azure and set the subscription you want to use for the deployment:
 ```bash
 az login
 az account set --subscription "YOUR_SUBSCRIPTION_NAME_OR_ID"
 ```
 
 Generate the ssh keys for the VMs:
-
 ```bash
 ssh-keygen -t rsa -b 2048 -f ~/.ssh/azure_vm
 cat ~/.ssh/azure_vm.pub # Put that value in the `azure.tfvars` file
+```
+
+:warning: Make sure you filled the tf.vars files with the necessary values. You have an example in the `terraform/azure.auto.tfvars.example` file.
+
+Select the previously created `azure` workspace and initialize Terraform:
+
+```bash
+terraform workspace select azure
+terraform init
 ```
 
 Right now the deployment in Azure is in 3 steps:
@@ -97,38 +118,18 @@ This command will create the following architecture:
 ```mermaid
 graph TD
 
-  subgraph US Environment
-    VM_US["VM (US)"]
-    Net_US["Virtual Network (US)"]
-    NSG_US["NSG (SSH, HTTP, HTTPS, K8s API)"]
-    K3s_US["K3s Cluster"]
+  subgraph Azure Environments x3
+    VM["VM"]
+    Net["Virtual Network"]
+    NSG["NSG (SSH, HTTP, HTTPS, K8s API)"]
+    K3s["K3s Cluster"]
+    PIP["Public IP"]
   end
 
-  subgraph EU Environment
-    VM_EU["VM (EU)"]
-    Net_EU["Virtual Network (EU)"]
-    NSG_EU["NSG (SSH, HTTP, HTTPS, K8s API)"]
-    K3s_EU["K3s Cluster"]
-  end
-
-  subgraph LB Environment
-    VM_LB["VM (LB)"]
-    Net_LB["Virtual Network (LB)"]
-    NSG_LB["NSG (SSH, HTTP, HTTPS, K8s API)"]
-    K3s_LB["K3s Cluster"]
-  end
-
-  VM_US --> Net_US
-  VM_US --> NSG_US
-  VM_US --> K3s_US
-
-  VM_EU --> Net_EU
-  VM_EU --> NSG_EU
-  VM_EU --> K3s_EU
-
-  VM_LB --> Net_LB
-  VM_LB --> NSG_LB
-  VM_LB --> K3s_LB
+  VM --> Net
+  VM --> NSG
+  VM --> K3s
+  VM --> PIP
 ```
 
 - 3 groups of resources are created, one for each environment (US, EU, LB).
@@ -154,7 +155,7 @@ Right now we are using Cloudflare proxy in front of the LB to add the country co
 To change the DNS settings, you need to update the Cloudflare DNS records to point to the public IP addresses of the VMs.
 
 ![cloudflare config screenshot](./assets/cloudflare.png)
-![alt text](image.png)
+
 ### Api deployment module
 This module deploys the foobar API.
 
@@ -177,7 +178,7 @@ we also can directly access the API in each region:
 France based request example:
 ```bash
 curl https://lb.thomas-mauran.com
-Hostname: api-69cb5c5b9d-9kh7f
+Hostname: eu
 IP: 127.0.0.1
 IP: ::1
 IP: 10.42.0.9
@@ -203,6 +204,7 @@ X-Real-Ip: 10.42.0.1
 
 We see here is the response from the eu api, which basically echos the headers and infos of the request.
 lets break down the headers and what happened here:
+- `Hostname`: eu, this is the hostname of the eu api we set in tf.
 - `Host`: eu.thomas-mauran.com, the request was handled by the eu api.
 - `Cf-Ipcountry`: FR, this is the country code added by Cloudflare proxy in front of the loadbalancer based on the IP address of the request.
 
@@ -218,7 +220,7 @@ graph TD
 US based response example:
 ```bash
 curl https://lb.thomas-mauran.com
-Hostname: api-69cb5c5b9d-7ftxj
+Hostname: us
 IP: 127.0.0.1
 IP: ::1
 IP: 10.42.0.9
