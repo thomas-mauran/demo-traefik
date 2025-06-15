@@ -59,9 +59,6 @@ EOF
           -config /tmp/cert.conf \
           -extensions v3_req
         
-        # Clean up config file
-        rm /tmp/cert.conf
-        
         # Install k3s normally on regional clusters
         curl -sfL https://get.k3s.io | sh -s - --write-kubeconfig-mode 644 --tls-san #{ip}
       else
