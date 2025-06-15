@@ -5,7 +5,7 @@ locals {
 # API namespace to deploy our app
 resource "azurerm_resource_group" "vm_rg" {
   name     = "${var.region}-${var.deployment_type}-group"
-  location = "Central US"
+  location = var.region == "us" ? "centralus" : "westeurope"
 }
 
 # Virtual network
